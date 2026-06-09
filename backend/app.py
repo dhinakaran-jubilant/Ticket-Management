@@ -80,9 +80,9 @@ def send_approval_email(ticket_data, to_email, receiver_name, role="Management")
         # Environment-based host selection
         env = os.environ.get('APP_ENV', 'local')
         if env == 'prod':
-            host = "http://122.165.253.167:443"
+            host = "http://192.168.0.7:2500"
         else:
-            host = "http://localhost:443"
+            host = "http://localhost:2500"
 
         import urllib.parse
         encoded_name  = urllib.parse.quote(receiver_name)
@@ -445,9 +445,9 @@ def send_completion_email(ticket_data):
         # Environment-based host selection
         env = os.environ.get('APP_ENV', 'local')
         if env == 'prod':
-            host = "http://122.165.253.167:443"
+            host = "http://192.168.0.7:2500"
         else:
-            host = "http://localhost:443"
+            host = "http://localhost:2500"
 
         status_link = f"{host}/status?ticketId={ticket_id}"
 
@@ -790,7 +790,7 @@ def get_asset_qr_endpoint(asset_id):
         branch = asset.get("branch", "") if asset else ""
 
         # 2. Compile QR Code (standard high quality)
-        host = "http://122.165.253.167:443"
+        host = "http://192.168.0.7:2500"
 
         qr_data = f"{host}/asset/{asset_id}"
 
@@ -1962,6 +1962,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     os.environ['APP_ENV'] = args.env
 
-    host = "122.165.253.167" if args.env == "prod" else "localhost"
+    host = "192.168.0.7" if args.env == "prod" else "localhost"
     is_debug = (args.env == "local")
-    app.run(host=host, port=443, debug=is_debug)
+    app.run(host=host, port=2500, debug=is_debug)
