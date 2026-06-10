@@ -1334,25 +1334,25 @@ def submit_ticket():
             filename        = file.filename
             attachment_bytes = file.read()
 
-        # ── Custom ID Generation based on Branch ──────────────────────────
-        # Mapping: branch name -> (prefix, suffix)
-        BRANCH_MAP = {
-            "Cotton Concepts HO_ Coimbatore": ("CCCD", "HO"),
-            "Doctor Towels HO":               ("DST", "HO"),
-            "Cotton Concepts_ Vengamedu":     ("VMCC", ""),
-            "Cotton Concepts_ Karur":         ("KRFCC", ""),
-            "Doctor Towels_ Karur":           ("KRDST", ""),
-        }
-        
-        branch_name = data.get("branch", "").strip()
-        # Normalize: if someone sends "HO, Coimbatore" instead of "HO_ Coimbatore"
-        normalized_branch = branch_name.replace(", ", "_ ")
-        prefix, suffix = BRANCH_MAP.get(normalized_branch, BRANCH_MAP.get(branch_name, ("TKT", "")))
-        
+        # ── Custom ID Generation based on Emp Code ────────────────────────
+        # Format: {LETTER_PREFIX_FROM_EMP_CODE}{YEAR}{SEQUENTIAL_4_DIGIT}
+        # e.g. empCode=jc0033 -> JC20260001, empCode=FE0025 -> FE20260001
+        import re as _re
+        import datetime as _dt
+
+        emp_code_raw = data.get("empCode", "").strip()
+        # Extract only the leading letters from emp code (ignore digits)
+        emp_letters_match = _re.match(r'^([A-Za-z]+)', emp_code_raw)
+        emp_prefix = emp_letters_match.group(1).upper() if emp_letters_match else "TKT"
+
+        current_year = _dt.datetime.now().year
+        # Prefix for DB lookup: e.g. "JC2026"
+        id_prefix = f"{emp_prefix}{current_year}"
+
         from database import get_max_sequential_id
-        max_num = get_max_sequential_id(prefix, suffix)
+        max_num = get_max_sequential_id(id_prefix, "")
         next_num = max_num + 1
-        ticket_id = f"{prefix}{next_num:03d}{suffix}"
+        ticket_id = f"{id_prefix}{next_num:04d}"
         # ─────────────────────────────────────────────────────────────────
 
         data['attachment']       = filename

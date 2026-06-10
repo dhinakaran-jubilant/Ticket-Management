@@ -15,7 +15,7 @@ import psycopg2.extras
 from datetime import datetime, timedelta
 
 env = os.environ.get("APP_ENV", "local")
-db_pwd = "cotton123" if env == "prod" else "1234"
+db_pwd = "1234"
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", f"postgresql://postgres:{db_pwd}@localhost:5432/jubi_ticketdb"
 )
