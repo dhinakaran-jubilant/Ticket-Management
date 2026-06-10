@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 env = os.environ.get("APP_ENV", "local")
 db_pwd = "cotton123" if env == "prod" else "1234"
 DATABASE_URL = os.environ.get(
-    "DATABASE_URL", f"postgresql://postgres:{db_pwd}@localhost:5432/ticketdb"
+    "DATABASE_URL", f"postgresql://postgres:{db_pwd}@localhost:5432/jubi_ticketdb"
 )
 
 
@@ -106,6 +106,7 @@ def _row_to_ticket(row: dict) -> dict:
         "userConfirmation":       row.get("user_confirmation") or "Pending",
         "inProgressTime":         row["in_progress_time"].strftime("%d-%m-%Y %I:%M %p") if row.get("in_progress_time") else "",
         "email":                  row.get("email") or "",
+        "empCode":                row.get("emp_code") or "",
         "managementApprovals":    row.get("management_approvals") or [],
         "adminComments":          row.get("admin_comments") or [],
         "admin_comments":         row.get("admin_comments") or [],
@@ -136,6 +137,7 @@ def init_db():
         ticket_id               VARCHAR(16) UNIQUE NOT NULL,
         created_at              TIMESTAMPTZ DEFAULT NOW(),
         full_name               TEXT NOT NULL,
+        emp_code                TEXT,
         mobile                  TEXT,
         category                TEXT,
         mode                    TEXT,
@@ -197,7 +199,8 @@ def init_db():
             "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS management_status TEXT;",
             "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS admin_manager_comments TEXT;",
             "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS management_comments TEXT;",
-            "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS approval_request_time TIMESTAMPTZ;"
+            "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS approval_request_time TIMESTAMPTZ;",
+            "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS emp_code TEXT;"
         ]
         try:
             conn = _get_conn()
@@ -244,6 +247,8 @@ def init_db():
                 cur.execute("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS receiver_position TEXT;")
                 # Add branch field for user filtering
                 cur.execute("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS branch TEXT;")
+                # Add employee code for admin users
+                cur.execute("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS emp_code TEXT;")
                 # Add per-manager approvals tracking (like management_approvals)
                 cur.execute("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS admin_manager_approvals JSONB DEFAULT '[]'::jsonb;")
                 # Seed default admin if table is empty
@@ -608,7 +613,7 @@ def get_admin_users() -> list:
         # We match by name and ensured it's not soft-deleted.
         cur.execute("""
             SELECT 
-                u.id, u.name, u.email, u.access, u.support_type, u.is_first_login, u.created_at, u.can_receive_mail, u.receiver_position, u.branch, u.can_send_mail,
+                u.id, u.name, u.email, u.access, u.support_type, u.is_first_login, u.created_at, u.can_receive_mail, u.receiver_position, u.branch, u.can_send_mail, u.emp_code,
                 EXISTS (SELECT 1 FROM assignees a WHERE a.name = u.name AND a.is_delete = false) as is_assignee
             FROM admin_users u
             ORDER BY u.created_at ASC;
@@ -622,32 +627,32 @@ def get_admin_users() -> list:
     return rows
 
 
-def create_admin_user(name: str, email: str, password: str, access: str = "View", support_type: str = "IT Support,Admin Support", can_receive_mail: bool = False, can_send_mail: bool = False, receiver_position: str = None, branch: str = "") -> dict:
+def create_admin_user(name: str, email: str, password: str, access: str = "View", support_type: str = "IT Support,Admin Support", can_receive_mail: bool = False, can_send_mail: bool = False, receiver_position: str = None, branch: str = "", emp_code: str = "") -> dict:
     conn = _get_conn()
     with conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO admin_users (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;",
-                (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch)
+                "INSERT INTO admin_users (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;",
+                (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code)
             )
             new_id = cur.fetchone()[0]
     conn.close()
     return {"id": new_id}
 
 
-def update_admin_user(user_id: int, name: str, email: str, password: str, access: str, support_type: str, can_receive_mail: bool = False, can_send_mail: bool = False, receiver_position: str = None, branch: str = "") -> bool:
+def update_admin_user(user_id: int, name: str, email: str, password: str, access: str, support_type: str, can_receive_mail: bool = False, can_send_mail: bool = False, receiver_position: str = None, branch: str = "", emp_code: str = "") -> bool:
     conn = _get_conn()
     with conn:
         with conn.cursor() as cur:
             if password:
                 cur.execute(
-                    "UPDATE admin_users SET name = %s, email = %s, password = %s, access = %s, support_type = %s, can_receive_mail = %s, can_send_mail = %s, receiver_position = %s, branch = %s WHERE id = %s;",
-                    (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, user_id)
+                    "UPDATE admin_users SET name = %s, email = %s, password = %s, access = %s, support_type = %s, can_receive_mail = %s, can_send_mail = %s, receiver_position = %s, branch = %s, emp_code = %s WHERE id = %s;",
+                    (name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code, user_id)
                 )
             else:
                 cur.execute(
-                    "UPDATE admin_users SET name = %s, email = %s, access = %s, support_type = %s, can_receive_mail = %s, can_send_mail = %s, receiver_position = %s, branch = %s WHERE id = %s;",
-                    (name, email, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, user_id)
+                    "UPDATE admin_users SET name = %s, email = %s, access = %s, support_type = %s, can_receive_mail = %s, can_send_mail = %s, receiver_position = %s, branch = %s, emp_code = %s WHERE id = %s;",
+                    (name, email, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code, user_id)
                 )
             updated = cur.rowcount > 0
     conn.close()
@@ -668,7 +673,7 @@ def verify_admin_login(email: str, password: str) -> dict | None:
     conn = _get_conn()
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, name, email, access, support_type, is_first_login, receiver_position, branch, can_receive_mail, can_send_mail FROM admin_users WHERE email = %s AND password = %s;",
+            "SELECT id, name, email, access, support_type, is_first_login, receiver_position, branch, can_receive_mail, can_send_mail, emp_code FROM admin_users WHERE email = %s AND password = %s;",
             (email, password)
         )
         row = cur.fetchone()
@@ -684,7 +689,8 @@ def verify_admin_login(email: str, password: str) -> dict | None:
             "receiver_position": row[6] if len(row) > 6 else None,
             "branch": row[7] if len(row) > 7 else "",
             "can_receive_mail": row[8] if len(row) > 8 else False,
-            "can_send_mail": row[9] if len(row) > 9 else False
+            "can_send_mail": row[9] if len(row) > 9 else False,
+            "empCode": row[10] if len(row) > 10 else ""
         }
     return None
 
@@ -742,14 +748,15 @@ def append_to_sheet(data: dict) -> dict:
                 cur.execute(
                     """
                     INSERT INTO tickets
-                        (ticket_id, full_name, mobile, category, mode,
+                        (ticket_id, full_name, emp_code, mobile, category, mode,
                          description, attachment, attachment_name, assignee,
                          status, sub_category, branch, department, support_type, email)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     """,
                     (
                         data.get("ticket_id"),
                         data.get("fullName", ""),
+                        data.get("empCode", ""),
                         normalize_mobile(data.get("mobile", "")),  # store normalised
                         data.get("category", ""),
                         data.get("mode", ""),

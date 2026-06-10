@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../api';
 import logoImage from '../assets/logo.png';
-import logoDarkImage from '../assets/logo1.png';
+const logoDarkImage = logoImage;
 import { copyToClipboard } from '../utils/clipboard';
 
 const TicketForm = () => {
@@ -59,6 +59,7 @@ const TicketForm = () => {
 
     const [formData, setFormData] = useState({
         fullName: '',
+        empCode: '',
         mobile: '',
         category: '',
         subCategory: '',
@@ -128,6 +129,7 @@ const TicketForm = () => {
                 // Let's reset everything.
                 setFormData({
                     fullName: '',
+                    empCode: '',
                     mobile: '',
                     category: '',
                     subCategory: '',
@@ -161,7 +163,7 @@ const TicketForm = () => {
                                 <img src={logoImage} alt="Logo" className="h-20 object-contain dark:hidden" />
                                 <img src={logoDarkImage} alt="Logo" className="h-20 object-contain hidden dark:block" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-white text-center mb-6">Select Your Support Type and Branch</h3>
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-white text-center mb-6">Select Your Support Type</h3>
 
                             <div className="space-y-6">
                                 <div className="space-y-2">
@@ -183,31 +185,9 @@ const TicketForm = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Branch <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none cursor-pointer pr-10"
-                                            value={formData.branch}
-                                            onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">Select a branch</option>
-                                            <option value="Cotton Concepts HO_ Coimbatore">Cotton Concepts HO, Coimbatore</option>
-                                            <option value="Doctor Towels HO">Doctor Towels HO</option>
-                                            <option value="Cotton Concepts_ Vengamedu">Cotton Concepts, Vengamedu</option>
-                                            <option value="Cotton Concepts_ Karur">Cotton Concepts, Karur Factory</option>
-                                            <option value="Doctor Towels_ Karur">Doctor Towels, Karur</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">
-                                            <span className="material-symbols-outlined">expand_more</span>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <button
                                     type="button"
-                                    disabled={!formData.branch || !formData.supportType}
+                                    disabled={!formData.supportType}
                                     onClick={() => {
                                         setShowBranchPopup(false);
                                         window.scrollTo(0, 0);
@@ -317,6 +297,22 @@ const TicketForm = () => {
                                 onChange={handleChange}
                             />
                         </div>
+                        {/* Employee Code */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="empCode">Emp Code <span className="text-red-500">*</span></label>
+                            <input
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                id="empCode"
+                                name="empCode"
+                                placeholder="e.g. EMP12345"
+                                type="text"
+                                required
+                                value={formData.empCode}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Email Address */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">Email Address <span className="text-red-500">*</span></label>
@@ -331,8 +327,6 @@ const TicketForm = () => {
                                 onChange={handleChange}
                             />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Mobile Number */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="mobile">Mobile Number <span className="text-red-500">*</span></label>
@@ -350,6 +344,8 @@ const TicketForm = () => {
                                 onChange={handleChange}
                             />
                         </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Department */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="department">Department <span className="text-red-500">*</span></label>
@@ -370,8 +366,6 @@ const TicketForm = () => {
                                     ))}
                             </select>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Issue Category */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="category">Category <span className="text-red-500">*</span></label>
@@ -392,8 +386,10 @@ const TicketForm = () => {
                                     ))}
                             </select>
                         </div>
-                        {/* Sub Category - Material Request Only */}
-                        {formData.category === 'Material request' && (
+                    </div>
+                    {/* Sub Category - Material Request Only */}
+                    {formData.category === 'Material request' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="subCategory">Sub Category <span className="text-red-500">*</span></label>
                                 <select
@@ -411,32 +407,11 @@ const TicketForm = () => {
                                     <option value="Temporary request">Temporary request</option>
                                 </select>
                             </div>
-                        )}
-                        {/* Mode — hidden for Material Request */}
-                        {formData.category !== 'Material request' && (
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="mode">Mode <span className="text-red-500">*</span></label>
-                                <select
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                    id="mode"
-                                    name="mode"
-                                    required
-                                    value={formData.mode}
-                                    onChange={handleChange}
-                                >
-                                    <option value="">Select mode</option>
-                                    {formData.category !== 'Printer issues' && (
-                                        <option value="Remote">Remote Support</option>
-                                    )}
-                                    <option value="User End Support">User End Support</option>
-                                </select>
-
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     {/* Description */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="description">Description</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="description">Description (Nature of Issues)</label>
                         <textarea
                             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             id="description"
@@ -450,7 +425,7 @@ const TicketForm = () => {
 
                     {/* Attachments */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Attachments (Images only) - Optional</label>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Attachments (Images only)</label>
                         <div className={`mt-1 flex justify-center px-6 pt-7 pb-8 border-2 ${attachmentError ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'} border-dashed rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group relative`}>
                             <input
                                 type="file"

@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 
 import logoImage from '../assets/logo.png';
-import logoDarkImage from '../assets/logo1.png';
+const logoDarkImage = logoImage;
+
 
 const Login = () => {
     const [email, setEmail] = useState('');

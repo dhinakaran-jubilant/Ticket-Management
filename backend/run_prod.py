@@ -12,7 +12,7 @@ if __name__ == '__main__':
     
     from app import app
     
-    port = 443
+    port = 2501
     host = '0.0.0.0' if args.env == 'prod' else 'localhost'
     print(f"Starting Waitress server on {host}:{port} in {args.env} mode...")
     

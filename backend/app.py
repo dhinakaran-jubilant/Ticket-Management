@@ -269,6 +269,10 @@ def send_approval_email(ticket_data, to_email, receiver_name, role="Management")
                 <td>{ticket_data.get('fullName', '')}</td>
               </tr>
               <tr>
+                <td><strong>Employee Code</strong></td>
+                <td>{ticket_data.get('empCode', '')}</td>
+              </tr>
+              <tr style="background:#f8fafc;">
                 <td><strong>Mobile</strong></td>
                 <td>{ticket_data.get('mobile', '')}</td>
               </tr>
@@ -394,6 +398,7 @@ def send_new_ticket_notification(ticket_data, recipient_email):
           <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
             <tr><td style="width: 30%;"><strong>Ticket ID</strong></td><td>{ticket_id}</td></tr>
             <tr><td><strong>From (Name)</strong></td><td>{name}</td></tr>
+            <tr><td><strong>Emp Code</strong></td><td>{ticket_data.get('empCode', '')}</td></tr>
             <tr><td><strong>Branch</strong></td><td>{branch}</td></tr>
             <tr><td><strong>Department</strong></td><td>{department}</td></tr>
             <tr><td><strong>Category</strong></td><td>{category_display}</td></tr>
@@ -579,12 +584,13 @@ def create_user():
         can_send_mail = data.get("can_send_mail", False)
         receiver_position = data.get("receiver_position", "").strip() or None
         branch = data.get("branch", "All").strip()
+        emp_code = data.get("emp_code", "").strip()
 
         if not name or not email or not password:
             return jsonify({"error": "Name, email and password are required."}), 400
         if len(password) < 6:
             return jsonify({"error": "Password must be at least 6 characters long."}), 400
-        result = create_admin_user(name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch)
+        result = create_admin_user(name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code)
         logging.info(f"Admin Action: Created new user - Name: {name}, Email: {email}, Access: {access}, Support: {support_type}")
         
         # Optionally add as assignee
@@ -615,13 +621,14 @@ def edit_user(user_id):
         can_send_mail = data.get("can_send_mail", False)
         receiver_position = data.get("receiver_position", "").strip() or None
         branch = data.get("branch", "All").strip()
+        emp_code = data.get("emp_code", "").strip()
 
         if not name or not email:
             return jsonify({"error": "Name and email are required."}), 400
         if password and len(password) < 6:
             return jsonify({"error": "Password must be at least 6 characters long."}), 400
         
-        updated = update_admin_user(user_id, name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch)
+        updated = update_admin_user(user_id, name, email, password, access, support_type, can_receive_mail, can_send_mail, receiver_position, branch, emp_code)
         if updated:
             logging.info(f"Admin Action: Edited user {user_id} - Name: {name}, Email: {email}, Access: {access}, Support: {support_type}")
             
@@ -1725,6 +1732,8 @@ def approval_action_page(ticket_id, role):
                     <span class="value">{ticket['ticket_id']}</span></div>
                 <div class="field"><span class="label">Requester:</span>
                     <span class="value">{ticket['fullName']}</span></div>
+                <div class="field"><span class="label">Emp Code:</span>
+                    <span class="value">{ticket.get('empCode', '')}</span></div>
                 <div class="field"><span class="label">Mobile:</span>
                     <span class="value">{ticket.get('mobile', '')}</span></div>
                 <div class="field"><span class="label">Category:</span>

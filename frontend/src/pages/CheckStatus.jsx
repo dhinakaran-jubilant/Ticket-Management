@@ -171,6 +171,7 @@ const TicketCard = ({ ticketData, onUpdateTicket }) => {
                             </p>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                                 Submitted By: <span className="font-semibold text-slate-700 dark:text-slate-300">{ticketData.fullName}</span>
+                                {ticketData.empCode && <span className="ml-1.5 font-semibold text-slate-500 dark:text-slate-400">({ticketData.empCode})</span>}
                             </p>
                         </div>
                     </div>

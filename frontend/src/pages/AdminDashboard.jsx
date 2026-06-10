@@ -9,7 +9,8 @@ import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import api from '../api';
 import logoImage from '../assets/logo.png';
-import logoDarkImage from '../assets/logo1.png';
+// Using same logo for dark theme
+const logoDarkImage = logoImage;
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 const EXPORT_COLUMNS = [
@@ -18,7 +19,8 @@ const EXPORT_COLUMNS = [
     { id: 'date', label: 'Submited Date' },
     { id: 'month', label: 'Month' },
     { id: 'branch', label: 'Branch' },
-    { id: 'name', label: 'Name' },
+    { id: 'name', label: 'User Name' },
+    { id: 'empCode', label: 'Emp Code' },
     { id: 'mobile', label: 'Mobile' },
     { id: 'department', label: 'Department' },
     { id: 'category', label: 'Category' },
@@ -39,16 +41,17 @@ const EXPORT_COLUMNS = [
 const ACCESS_OPTIONS = ['View', 'Edit', 'Export'];
 
 const accessBadgeColor = (perm) => {
-    if (perm === 'View') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+    if (perm === 'View') return 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary';
     if (perm === 'Edit') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
     if (perm === 'Export') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
     return 'bg-slate-100 text-slate-600';
 };
 
 const supportBadgeColor = (type) => {
-    if (type === 'IT Support') return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
-    if (type === 'Admin Support') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300';
-    return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+    const cleanType = (type || '').replace(/\s*support\s*/i, '').trim();
+    if (cleanType === 'IT') return 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary';
+    if (cleanType === 'Admin') return 'bg-slate-200 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300';
+    return 'bg-slate-200 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300';
 };
 
 const SUPPORT_TYPE_OPTIONS = ['IT Support', 'Admin Support'];
@@ -195,11 +198,12 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
         name: '', email: '', password: '',
         access: ['View'],
         support_type: ['IT Support', 'Admin Support'],
-        add_as_assignee: false,
+        add_as_assignee: true,
         can_receive_mail: false,
         can_send_mail: false,
         receiver_position: '',
-        branch: ['All']
+        branch: ['All'],
+        emp_code: ''
     });
     const [addError, setAddError] = useState('');
     const [addLoading, setAddLoading] = useState(false);
@@ -245,11 +249,12 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
             name: '', email: '', password: '',
             access: ['View'],
             support_type: ['IT Support', 'Admin Support'],
-            add_as_assignee: false,
+            add_as_assignee: true,
             can_receive_mail: false,
             can_send_mail: false,
             receiver_position: '',
-            branch: ['All']
+            branch: ['All'],
+            emp_code: ''
         });
     };
 
@@ -265,7 +270,8 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
             can_receive_mail: !!user.can_receive_mail,
             can_send_mail: !!user.can_send_mail,
             receiver_position: user.receiver_position || '',
-            branch: (user.branch || 'All').split(',').map(s => s.trim())
+            branch: (user.branch || 'All').split(',').map(s => s.trim()),
+            emp_code: user.emp_code || ''
         });
         setAddError('');
         setShowAddUser(true);
@@ -344,8 +350,8 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${editingUser ? 'bg-blue-600/10' : 'bg-primary/10'}`}>
-                                    <span className={`material-symbols-outlined text-lg ${editingUser ? 'text-blue-600 dark:text-blue-400' : 'text-primary'}`}>
+                                <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-primary/10">
+                                    <span className="material-symbols-outlined text-lg text-primary">
                                         {editingUser ? 'edit' : 'person_add'}
                                     </span>
                                 </div>
@@ -366,7 +372,7 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                         )}
 
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Username */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
@@ -381,6 +387,22 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                     </div>
                                 </div>
 
+                                {/* Emp Code */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                        Emp Code <span className="text-red-400">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">badge</span>
+                                        <input required type="text" value={newUser.emp_code}
+                                            onChange={e => setNewUser(p => ({ ...p, emp_code: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary text-slate-800 dark:text-white"
+                                            placeholder="e.g. EMP12345" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Email */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
@@ -394,23 +416,8 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                             placeholder="e.g. john@support.com" />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Branch Selection and Password in same row */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                        Branch <span className="text-red-400">*</span>
-                                    </label>
-                                    <MultiSelectFormDropdown
-                                        label="Branches"
-                                        icon="location_on"
-                                        options={BRANCH_OPTIONS}
-                                        selected={newUser.branch}
-                                        onChange={toggleBranch}
-                                    />
-                                </div>
-
+                                {/* Password */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
                                         Password {editingUser ? <span className="text-slate-400 font-normal">(Leave blank to keep current)</span> : <span className="text-red-400">*</span>}
@@ -473,76 +480,7 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                 </div>
                             </div>
 
-                            {/* Add as Assignee & Need to send mail */}
-                            <div className="flex flex-col gap-3">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={newUser.add_as_assignee}
-                                            onChange={e => setNewUser(p => ({ ...p, add_as_assignee: e.target.checked }))}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-10 h-5 rounded-full transition-colors ${newUser.add_as_assignee ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                        <div className={`absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform ${newUser.add_as_assignee ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                    </div>
-                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Add as Assignee</span>
-                                </label>
 
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={newUser.can_receive_mail}
-                                            onChange={e => setNewUser(p => ({
-                                                ...p,
-                                                can_receive_mail: e.target.checked,
-                                                receiver_position: e.target.checked ? (p.receiver_position || 'Management') : ''
-                                            }))}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-10 h-5 rounded-full transition-colors ${newUser.can_receive_mail ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                        <div className={`absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform ${newUser.can_receive_mail ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                    </div>
-                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Access to receive mail</span>
-                                </label>
-
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={newUser.can_send_mail}
-                                            onChange={e => setNewUser(p => ({ ...p, can_send_mail: e.target.checked }))}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-10 h-5 rounded-full transition-colors ${newUser.can_send_mail ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                        <div className={`absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform ${newUser.can_send_mail ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                    </div>
-                                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Access to send mail</span>
-                                </label>
-                            </div>
-
-                            {/* Receiver Position Dropdown */}
-                            {newUser.can_receive_mail && (
-                                <div className="animate-fade-in">
-                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                                        Receiver's Position <span className="text-red-400">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">badge</span>
-                                        <select
-                                            value={newUser.receiver_position}
-                                            onChange={e => setNewUser(p => ({ ...p, receiver_position: e.target.value }))}
-                                            className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary text-slate-800 dark:text-white appearance-none transition-shadow"
-                                            required
-                                        >
-                                            <option value="Manager">Manager</option>
-                                            <option value="Management">Management</option>
-                                        </select>
-                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Footer */}
@@ -552,7 +490,7 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                 Cancel
                             </button>
                             <button type="submit" disabled={addLoading}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-white rounded-xl disabled:opacity-60 transition-colors cursor-pointer ${editingUser ? 'bg-blue-600 hover:bg-blue-700' : 'bg-primary hover:bg-primary/90'}`}>
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-white dark:text-slate-950 bg-primary hover:bg-primary/90 rounded-xl disabled:opacity-60 transition-colors cursor-pointer">
                                 {addLoading && <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>}
                                 {addLoading ? 'Saving…' : (editingUser ? 'Save Changes' : 'Create User')}
                             </button>
@@ -604,10 +542,8 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                 <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Name</th>
                                 <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</th>
                                 <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Access</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Support Type</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Branch</th>
+                                <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Type</th>
                                 <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Created At</th>
-                                <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mail</th>
                                 <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
                             </tr>
                         </thead>
@@ -617,10 +553,10 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                                                {user.name?.[0]?.toUpperCase() || '?'}
-                                            </div>
-                                            <span className="font-semibold text-slate-800 dark:text-white">{user.name}</span>
+                                            <span className="font-semibold text-slate-800 dark:text-white">
+                                                {user.name}
+                                                {user.emp_code && <span className="ml-1.5 text-xs text-slate-400 font-normal">({user.emp_code})</span>}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{user.email}</td>
@@ -635,36 +571,23 @@ const UsersView = ({ users, setUsers, usersLoading, showAddUser, setShowAddUser 
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex gap-1.5 flex-wrap">
-                                            {(user.support_type || 'IT Support,Admin Support').split(',').map(p => (
-                                                <span key={p} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${supportBadgeColor(p.trim())}`}>
-                                                    {p.trim()}
-                                                </span>
-                                            ))}
+                                            {(user.support_type || 'IT Support,Admin Support').split(',').map(p => {
+                                                const cleanP = p.trim().replace(/\s*support\s*/i, '');
+                                                return (
+                                                    <span key={p} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${supportBadgeColor(p.trim())}`}>
+                                                        {cleanP}
+                                                    </span>
+                                                );
+                                            })}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                            {user.branch || 'All'}
-                                        </span>
-                                    </td>
                                     <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">{user.created_at || '—'}</td>
-                                    <td className="px-6 py-4">
-                                        {user.can_receive_mail ? (
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded w-fit">
-                                                    {user.receiver_position}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-[10px] text-slate-400 uppercase font-medium">No Mail</span>
-                                        )}
-                                    </td>
                                     <td className="px-6 py-4">
                                         <div className="flex gap-2">
                                             <button
                                                 title="Edit User"
                                                 onClick={() => handleOpenEdit(user)}
-                                                className="flex items-center justify-center w-8 h-8 text-blue-600 border border-blue-200 dark:border-blue-900/40 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+                                                className="flex items-center justify-center w-8 h-8 text-primary border border-primary/30 dark:border-primary/30 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors cursor-pointer"
                                             >
                                                 <span className="material-symbols-outlined text-[16px]">edit</span>
                                             </button>
@@ -1272,7 +1195,7 @@ const AssetsView = ({
                                 <button
                                     onClick={() => { handleEdit(selectedAsset); setSelectedAsset(null); }}
                                     title="Edit Asset"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-primary dark:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-[15px]">edit</span>
                                     Edit
@@ -1320,7 +1243,7 @@ const AssetsView = ({
                                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Condition</p>
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
                                             selectedAsset.condition === 'Excellent' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                            selectedAsset.condition === 'Good' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                            selectedAsset.condition === 'Good' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary' :
                                             selectedAsset.condition === 'Fair' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                                             'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                         }`}>
@@ -1891,7 +1814,7 @@ const AssetsView = ({
                                 }}
                                 className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-xl border border-slate-100 dark:border-slate-855 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all active:scale-[0.98] cursor-pointer"
                             >
-                                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                                     <span className="material-symbols-outlined text-2xl">image</span>
                                 </div>
                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 font-display">Photos</span>
@@ -2028,7 +1951,7 @@ const AssigneesView = ({ assignees, setAssignees, assigneesLoading, isExpanded, 
                                                     <div className="text-xs text-slate-400">Added {new Date(a.created_at).toLocaleDateString()}</div>
                                                 </td>
                                                 <td className="px-6 py-4 w-[25%]">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${a.support_type === 'IT Support' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : a.support_type === 'Admin Support' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300'}`}>
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${a.support_type === 'IT Support' ? 'bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:border-primary/30 dark:text-primary' : a.support_type === 'Admin Support' ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700/40 dark:border-slate-600 dark:text-slate-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300'}`}>
                                                         {a.support_type === 'IT Support,Admin Support' ? 'Both (IT & Admin)' : a.support_type}
                                                     </span>
                                                 </td>
@@ -2037,7 +1960,7 @@ const AssigneesView = ({ assignees, setAssignees, assigneesLoading, isExpanded, 
                                                         <button
                                                             title="Edit Assignee"
                                                             onClick={() => handleOpenEdit(a)}
-                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-blue-600 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-primary border border-primary/30 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                                         </button>
@@ -2153,242 +2076,6 @@ const AssigneesView = ({ assignees, setAssignees, assigneesLoading, isExpanded, 
                                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors text-white ${isSubmitting ? 'bg-primary/70 cursor-wait' : 'bg-primary hover:bg-primary/90'}`}
                                 >
                                     {isSubmitting ? 'Saving...' : editingAssignee ? 'Save Changes' : 'Add Assignee'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const AssetTypesView = ({ assetTypes, setAssetTypes, assetTypesLoading, isExpanded, onToggle }) => {
-    const [showAddType, setShowAddType] = useState(false);
-    const [editingType, setEditingType] = useState(null);
-    const [name, setName] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState('');
-    const [typeToDelete, setTypeToDelete] = useState(null);
-
-    const handleAdd = async (e) => {
-        e.preventDefault();
-        setError('');
-        if (!name.trim()) {
-            setError('Name is required.');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            if (editingType) {
-                await api.put(`/api/asset_types/${editingType.id}`, { name });
-            } else {
-                await api.post('/api/asset_types', { name });
-            }
-            const res = await api.get('/api/asset_types');
-            setAssetTypes(res.data);
-            handleCloseModal();
-        } catch (err) {
-            setError(err.response?.data?.error || `Failed to ${editingType ? 'edit' : 'add'} asset type.`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleCloseModal = () => {
-        setShowAddType(false);
-        setEditingType(null);
-        setName('');
-        setError('');
-    };
-
-    const handleOpenEdit = (type) => {
-        setEditingType(type);
-        setName(type.name);
-        setShowAddType(true);
-    };
-
-    const handleDeleteClick = (type) => {
-        setTypeToDelete(type);
-    };
-
-    const confirmDelete = async () => {
-        if (!typeToDelete) return;
-        try {
-            await api.delete(`/api/asset_types/${typeToDelete.id}`);
-            const res = await api.get('/api/asset_types');
-            setAssetTypes(res.data);
-            setTypeToDelete(null);
-        } catch (err) {
-            alert('Failed to delete asset type.');
-        }
-    };
-
-    return (
-        <div className="w-full shrink-0 p-8 border-b border-slate-200 dark:border-slate-800">
-            <div className="mb-4 flex items-end justify-between">
-                <div onClick={onToggle} className="cursor-pointer group select-none">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                        Asset Types ({assetTypes?.length || 0})
-                        <span className="material-symbols-outlined text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-                            {isExpanded ? 'expand_less' : 'expand_more'}
-                        </span>
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Manage asset categories dynamically.</p>
-                </div>
-                {isExpanded && (
-                    <button
-                        onClick={() => setShowAddType(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white font-medium text-sm transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">add</span>
-                        Add Type
-                    </button>
-                )}
-            </div>
-
-            {/* List */}
-            {isExpanded && (
-                <div className="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 overflow-hidden h-fit">
-                    {assetTypesLoading ? (
-                        <div className="p-10 text-center text-slate-500">Loading asset types...</div>
-                    ) : assetTypes.length === 0 ? (
-                        <div className="p-10 text-center text-slate-500">No asset types found. Add one on the left.</div>
-                    ) : (
-                        <div className="flex flex-col w-full">
-                            <table className="w-full text-left border-collapse table-fixed">
-                                <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[12%]">S.No</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[73%]">Type Name</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[15%]">Actions</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                <table className="w-full text-left border-collapse table-fixed">
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        {Array.isArray(assetTypes) && assetTypes.map((c, idx) => (
-                                            <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                                <td className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400 w-[12%]">{idx + 1}</td>
-                                                <td className="px-6 py-4 w-[73%]">
-                                                    <div className="text-sm font-medium text-slate-900 dark:text-white">{c.name}</div>
-                                                    <div className="text-xs text-slate-400">Added {new Date(c.created_at).toLocaleDateString()}</div>
-                                                </td>
-                                                <td className="px-6 py-4 w-[15%]">
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            title="Edit Type"
-                                                            onClick={() => handleOpenEdit(c)}
-                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-blue-600 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                                        >
-                                                            <span className="material-symbols-outlined text-[16px]">edit</span>
-                                                        </button>
-                                                        <button
-                                                            title="Delete Type"
-                                                            onClick={() => handleDeleteClick(c)}
-                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-red-600 border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                        >
-                                                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {typeToDelete && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-red-500">warning</span>
-                                Delete Type
-                            </h3>
-                            <button
-                                onClick={() => setTypeToDelete(null)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">close</span>
-                            </button>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                            Are you sure you want to delete <span className="font-semibold text-slate-800 dark:text-white">{typeToDelete.name}</span>? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setTypeToDelete(null)}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Add/Edit Modal */}
-            {showAddType && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-bold text-slate-800 dark:text-white text-lg">
-                                {editingType ? 'Edit Asset Type' : 'Add New Asset Type'}
-                            </h3>
-                            <button
-                                onClick={handleCloseModal}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">close</span>
-                            </button>
-                        </div>
-
-                        {error && (
-                            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm border border-red-100 dark:border-red-900/30">
-                                {error}
-                            </div>
-                        )}
-
-                        <form onSubmit={handleAdd} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Type Name</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    placeholder="e.g. Printer"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all"
-                                    required
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseModal}
-                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Saving...' : editingType ? 'Save Changes' : 'Add Type'}
                                 </button>
                             </div>
                         </form>
@@ -2516,7 +2203,7 @@ const CategoriesView = ({ categories, setCategories, categoriesLoading, isExpand
                                                     <div className="text-xs text-slate-400">Added {new Date(c.created_at).toLocaleDateString()}</div>
                                                 </td>
                                                 <td className="px-6 py-4 w-[25%]">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${c.support_type?.includes('IT Support') ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300'}`}>
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${c.support_type?.includes('IT Support') ? 'bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:border-primary/30 dark:text-primary' : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700/40 dark:border-slate-600 dark:text-slate-300'}`}>
                                                         {c.support_type === 'IT Support,Admin Support' ? 'Both (IT & Admin)' : c.support_type}
                                                     </span>
                                                 </td>
@@ -2525,7 +2212,7 @@ const CategoriesView = ({ categories, setCategories, categoriesLoading, isExpand
                                                         <button
                                                             title="Edit Category"
                                                             onClick={() => handleOpenEdit(c)}
-                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-blue-600 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-primary border border-primary/30 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                                         </button>
@@ -2772,7 +2459,7 @@ const DepartmentsView = ({ departments, setDepartments, departmentsLoading, isEx
                                                     <div className="text-xs text-slate-400">Added {new Date(d.created_at).toLocaleDateString()}</div>
                                                 </td>
                                                 <td className="px-6 py-4 w-[25%]">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${d.support_type?.includes('IT Support') ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300'}`}>
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${d.support_type?.includes('IT Support') ? 'bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:border-primary/30 dark:text-primary' : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700/40 dark:border-slate-600 dark:text-slate-300'}`}>
                                                         {d.support_type === 'IT Support,Admin Support' ? 'Both (IT & Admin)' : d.support_type}
                                                     </span>
                                                 </td>
@@ -2781,7 +2468,7 @@ const DepartmentsView = ({ departments, setDepartments, departmentsLoading, isEx
                                                         <button
                                                             title="Edit Department"
                                                             onClick={() => handleOpenEdit(d)}
-                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-blue-600 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 shadow-sm"
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors text-primary border border-primary/30 dark:border-primary/30 hover:bg-primary/10 dark:hover:bg-primary/20 shadow-sm"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                                         </button>
@@ -2968,6 +2655,7 @@ const AdminDashboard = () => {
     const location = useLocation();
     const { user, logout, refreshUser } = useAuth();
     const isSuperAdmin = user?.email === 'admin@support.com';
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isPowerUser = user?.receiver_position === 'Management' || user?.receiver_position === 'Manager';
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -3780,7 +3468,7 @@ const AdminDashboard = () => {
     const getStatusColor = (status) => {
         const s = status?.toLowerCase() || '';
         if (s === 'completed' || s === 'resolved') return 'text-green-600';
-        if (s === 'in progress') return 'text-blue-600';
+        if (s === 'in progress') return 'text-primary';
         if (s === 'pending') return 'text-amber-600';
         if (s === 'rejected') return 'text-red-600';
         return 'text-slate-500';
@@ -3797,8 +3485,8 @@ const AdminDashboard = () => {
             );
         } else if (s === 'in progress') {
             return (
-                <span className="flex items-center gap-1.5 text-sm text-blue-600 font-medium">
-                    <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                <span className="flex items-center gap-1.5 text-sm text-primary font-medium">
+                    <span className="h-2 w-2 rounded-full bg-primary"></span>
                     {status}
                 </span>
             );
@@ -3878,6 +3566,7 @@ const AdminDashboard = () => {
                 month: monthStr,
                 branch: ticket.branch || '',
                 name: ticket.fullName || '',
+                empCode: ticket.empCode || '',
                 mobile: ticket.mobile || '',
                 department: ticket.department || '',
                 category: ticket.category || '',
@@ -3956,6 +3645,12 @@ const AdminDashboard = () => {
                             gap: 1.5rem !important;
                         }
                         
+                        .print-grid-3 { 
+                            display: grid !important; 
+                            grid-template-columns: repeat(3, minmax(0, 1fr)) !important; 
+                            gap: 1.5rem !important;
+                        }
+                        
                         .md\:grid-cols-3 { 
                             display: grid !important;
                             grid-template-columns: repeat(3, minmax(0, 1fr)) !important; 
@@ -3995,11 +3690,11 @@ const AdminDashboard = () => {
         const matchesSearch = searchQuery === '' ||
             ticket.ticket_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
             ticket.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (ticket.empCode && ticket.empCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (ticket.assignee && ticket.assignee.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (ticket.category && ticket.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesDepartment = departmentFilter.includes('All') || departmentFilter.includes(ticket.department);
-        const matchesBranch = branchFilter.includes('All') || branchFilter.includes(ticket.branch);
         const matchesCategory = categoryFilter.includes('All') || categoryFilter.includes(ticket.category);
         const matchesAssignee = assigneeFilter.includes('All') || assigneeFilter.includes(ticket.assignee);
 
@@ -4026,7 +3721,7 @@ const AdminDashboard = () => {
             }
         }
 
-        return matchesSearch && matchesBranch && matchesDepartment && matchesCategory && matchesAssignee && matchesDate;
+        return matchesSearch && matchesDepartment && matchesCategory && matchesAssignee && matchesDate;
     });
 
     const filteredTickets = baseFilteredTickets.filter(ticket => statusFilter.includes('All') || statusFilter.includes(ticket.status));
@@ -4050,7 +3745,6 @@ const AdminDashboard = () => {
         setCurrentPage(1);
     }, [searchQuery, statusFilter, branchFilter, departmentFilter, categoryFilter, assigneeFilter, dateRange, isDateFilterActive]);
 
-    const uniqueBranches = ['All', ...new Set(tickets.map(t => t.branch).filter(Boolean))];
     const uniqueDepartments = ['All', ...new Set(tickets.map(t => t.department).filter(Boolean))];
     const uniqueCategories = ['All', ...new Set(tickets.map(t => t.category).filter(Boolean))];
     const uniqueAssignees = ['All', ...new Set(tickets.map(t => t.assignee).filter(Boolean))];
@@ -4116,45 +3810,64 @@ const AdminDashboard = () => {
 
     return (
         <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
-            <aside className="w-64 h-screen bg-sidebar-light dark:bg-sidebar-dark border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
-                <div className="h-24 flex items-center justify-center px-4 py-2 border-b border-slate-200 dark:border-slate-600">
-                    <img src={logoImage} alt="Logo" className="h-20 w-auto object-contain dark:hidden" />
-                    <img src={logoDarkImage} alt="Logo" className="h-20 w-auto object-contain hidden dark:block" />
+            <aside className={`relative h-screen bg-sidebar-light dark:bg-sidebar-dark border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-68'}`}>
+                {/* Floating collapse/expand button */}
+                <button
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    className="absolute -right-3 top-5 z-50 flex items-center justify-center w-6 h-6 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-sm cursor-pointer hover:scale-105"
+                    title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                    <span className="material-symbols-outlined text-[16px] font-bold select-none">
+                        {isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
+                    </span>
+                </button>
+
+                <div className={`h-16 flex items-center border-b border-slate-200 dark:border-slate-600 px-3 py-2 overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
+                    <img src={logoImage} alt="Logo" className="h-8 w-auto object-contain dark:hidden shrink-0" />
+                    <img src={logoDarkImage} alt="Logo" className="h-8 w-auto object-contain hidden dark:block shrink-0" />
+                    {!isSidebarCollapsed && (
+                        <span className="text-lg font-black tracking-wider bg-gradient-to-r from-[#B79B5C] to-[#93793C] bg-clip-text text-transparent uppercase select-none transition-all duration-300 whitespace-nowrap animate-in fade-in duration-300">
+                            JUBILANT CAPITAL
+                        </span>
+                    )}
                 </div>
-                <nav className="flex-1 space-y-1">
+                <nav className="flex-1 space-y-1 py-4">
                     <button
                         onClick={() => {
                             navigate('/tickets');
                         }}
-                        className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors cursor-pointer ${activeView === 'tickets'
+                        title={isSidebarCollapsed ? "Tickets" : ""}
+                        className={`w-full flex items-center py-3 text-sm font-medium transition-all cursor-pointer ${isSidebarCollapsed ? 'justify-center px-3' : 'px-6'} ${activeView === 'tickets'
                             ? 'text-primary bg-primary/10 border-r-4 border-primary'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary'
                             }`}>
-                        <span className="material-symbols-outlined mr-3">confirmation_number</span>
-                        <span>Tickets</span>
+                        <span className={`material-symbols-outlined shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`}>confirmation_number</span>
+                        {!isSidebarCollapsed && <span className="animate-in fade-in duration-300 whitespace-nowrap">Tickets</span>}
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => {
                             navigate('/assets');
                         }}
-                        className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors cursor-pointer ${activeView === 'assets'
+                        title={isSidebarCollapsed ? "Assets" : ""}
+                        className={`w-full flex items-center py-3 text-sm font-medium transition-all cursor-pointer ${isSidebarCollapsed ? 'justify-center px-3' : 'px-6'} ${activeView === 'assets'
                             ? 'text-primary bg-primary/10 border-r-4 border-primary'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary'
                             }`}>
-                        <span className="material-symbols-outlined mr-3">inventory_2</span>
-                        <span>Assets</span>
-                    </button>
+                        <span className={`material-symbols-outlined shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`}>inventory_2</span>
+                        {!isSidebarCollapsed && <span className="animate-in fade-in duration-300 whitespace-nowrap">Assets</span>}
+                    </button> */}
                     {user?.email === 'admin@support.com' && (
                         <button
                             onClick={() => {
                                 navigate('/users');
                             }}
-                            className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors cursor-pointer ${activeView === 'users'
+                            title={isSidebarCollapsed ? "Users" : ""}
+                            className={`w-full flex items-center py-3 text-sm font-medium transition-all cursor-pointer ${isSidebarCollapsed ? 'justify-center px-3' : 'px-6'} ${activeView === 'users'
                                 ? 'text-primary bg-primary/10 border-r-4 border-primary'
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary'
                                 }`}>
-                            <span className="material-symbols-outlined mr-3">group</span>
-                            <span>Users</span>
+                            <span className={`material-symbols-outlined shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`}>group</span>
+                            {!isSidebarCollapsed && <span className="animate-in fade-in duration-300 whitespace-nowrap">Users</span>}
                         </button>
                     )}
                     {user?.email === 'admin@support.com' && (
@@ -4162,35 +3875,42 @@ const AdminDashboard = () => {
                             onClick={() => {
                                 navigate('/settings');
                             }}
-                            className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors cursor-pointer ${activeView === 'settings'
+                            title={isSidebarCollapsed ? "Settings" : ""}
+                            className={`w-full flex items-center py-3 text-sm font-medium transition-all cursor-pointer ${isSidebarCollapsed ? 'justify-center px-3' : 'px-6'} ${activeView === 'settings'
                                 ? 'text-primary bg-primary/10 border-r-4 border-primary'
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary'
                                 }`}>
-                            <span className="material-symbols-outlined mr-3">settings</span>
-                            <span>Settings</span>
+                            <span className={`material-symbols-outlined shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`}>settings</span>
+                            {!isSidebarCollapsed && <span className="animate-in fade-in duration-300 whitespace-nowrap">Settings</span>}
                         </button>
                     )}
                 </nav>
-                <div className="p-6 border-t border-slate-200 dark:border-slate-600">
-                    <div className="flex items-center gap-3 mb-4">
+                <div className={`border-t border-slate-200 dark:border-slate-600 transition-all duration-300 ${isSidebarCollapsed ? 'p-3' : 'p-6'}`}>
+                    <div className={`flex items-center gap-3 mb-4 transition-all duration-300 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                         <div
-                            className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                            className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
                             {user?.name?.[0]?.toUpperCase() || 'A'}
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-semibold truncate">{user?.name || 'Admin User'}</p>
-                            <p className="text-xs text-slate-500 truncate">{user?.email || 'admin@support.com'}</p>
-                        </div>
+                        {!isSidebarCollapsed && (
+                            <div className="overflow-hidden animate-in fade-in duration-300">
+                                <p className="text-sm font-semibold truncate">{user?.name || 'Admin User'}</p>
+                                <p className="text-xs text-slate-500 truncate">{user?.email || 'admin@support.com'}</p>
+                            </div>
+                        )}
                     </div>
-                    <button onClick={handleLogout} className="w-full flex items-center justify-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors border border-red-200 dark:border-red-600">
-                        <span className="material-symbols-outlined mr-2 text-lg">logout</span>
-                        <span className="font-medium">Logout</span>
+                    <button 
+                        onClick={handleLogout} 
+                        className={`flex items-center justify-center text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all border border-red-200 dark:border-red-600 cursor-pointer ${isSidebarCollapsed ? 'w-10 h-10 mx-auto' : 'w-full px-4 py-2.5 text-sm'}`}
+                        title={isSidebarCollapsed ? "Logout" : ""}
+                    >
+                        <span className={`material-symbols-outlined text-lg shrink-0 ${isSidebarCollapsed ? '' : 'mr-2'}`}>logout</span>
+                        {!isSidebarCollapsed && <span className="font-medium">Logout</span>}
                     </button>
                 </div>
             </aside>
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header
-                    className="h-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
+                    className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
                     {activeView === 'users' && (
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Users</h2>
@@ -4269,7 +3989,7 @@ const AdminDashboard = () => {
                                             months={2}
                                             ranges={dateRange}
                                             direction="horizontal"
-                                            rangeColors={['#137fec']}
+                                            rangeColors={['#2F4858']}
                                             staticRanges={[]}
                                             inputRanges={[]}
                                         />
@@ -4286,7 +4006,7 @@ const AdminDashboard = () => {
                                             )}
                                             <button
                                                 onClick={() => setShowDatePicker(false)}
-                                                className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                                                className="px-4 py-1.5 bg-primary text-white dark:text-slate-950 text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
                                             >
                                                 Done
                                             </button>
@@ -4301,7 +4021,7 @@ const AdminDashboard = () => {
                                     title={selectedAssetIds.length === 0 ? "Select assets to download" : "Download Options"}
                                     className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all shadow-sm
                                     ${selectedAssetIds.length > 0
-                                        ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 cursor-pointer animate-in fade-in scale-in-95 duration-200'
+                                        ? 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer animate-in fade-in scale-in-95 duration-200'
                                         : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'}`}
                                 >
                                     <span className="material-symbols-outlined text-[20px]">
@@ -4321,7 +4041,7 @@ const AdminDashboard = () => {
                                                 handleDownloadSelectedQRs();
                                                 setShowDownloadDropdown(false);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2.5 transition-colors cursor-pointer"
+                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary flex items-center gap-2.5 transition-colors cursor-pointer"
                                         >
                                             <span className="material-symbols-outlined text-base">qr_code</span>
                                             <span>QR Code</span>
@@ -4331,7 +4051,7 @@ const AdminDashboard = () => {
                                                 handleDownloadSelectedAssets();
                                                 setShowDownloadDropdown(false);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-2.5 transition-colors border-t border-slate-100 dark:border-slate-800/80 mt-1 pt-1 cursor-pointer"
+                                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary flex items-center gap-2.5 transition-colors border-t border-slate-100 dark:border-slate-800/80 mt-1 pt-1 cursor-pointer"
                                         >
                                             <span className="material-symbols-outlined text-base">description</span>
                                             <span>Asset Details</span>
@@ -4375,13 +4095,6 @@ const AdminDashboard = () => {
                                 type="text" />
                         </div>
                         <div className="flex items-center gap-2 mx-4">
-                            <MultiSelectFilter
-                                label="Branch"
-                                icon="location_on"
-                                options={uniqueBranches}
-                                selected={branchFilter}
-                                onChange={setBranchFilter}
-                            />
                             <MultiSelectFilter
                                 label="Dept"
                                 icon="corporate_fare"
@@ -4431,12 +4144,11 @@ const AdminDashboard = () => {
                             </button>
 
                             {/* Clear Filters Button */}
-                            {(searchQuery !== '' || !statusFilter.includes('All') || !branchFilter.includes('All') || !departmentFilter.includes('All') || !categoryFilter.includes('All') || !assigneeFilter.includes('All') || isDateFilterActive) && (
+                            {(searchQuery !== '' || !statusFilter.includes('All') || !departmentFilter.includes('All') || !categoryFilter.includes('All') || !assigneeFilter.includes('All') || isDateFilterActive) && (
                                 <button
                                     onClick={() => {
                                         setSearchQuery('');
                                         setStatusFilter(['All']);
-                                        setBranchFilter(['All']);
                                         setDepartmentFilter(['All']);
                                         setCategoryFilter(['All']);
                                         setAssigneeFilter(['All']);
@@ -4488,7 +4200,7 @@ const AdminDashboard = () => {
                                         months={2}
                                         ranges={dateRange}
                                         direction="horizontal"
-                                        rangeColors={['#137fec']}
+                                        rangeColors={['#2F4858']}
                                         staticRanges={[]}
                                         inputRanges={[]}
                                     />
@@ -4505,7 +4217,7 @@ const AdminDashboard = () => {
                                         )}
                                         <button
                                             onClick={() => setShowDatePicker(false)}
-                                            className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                                            className="px-4 py-1.5 bg-primary text-white dark:text-slate-950 text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
                                         >
                                             Done
                                         </button>
@@ -4600,13 +4312,6 @@ const AdminDashboard = () => {
                             onToggle={() => setExpandedSettingsView(prev => prev === 'departments' ? null : 'departments')}
                             showToast={showToast}
                         />
-                        <AssetTypesView
-                            assetTypes={assetTypes}
-                            setAssetTypes={setAssetTypes}
-                            assetTypesLoading={assetTypesLoading}
-                            isExpanded={expandedSettingsView === 'assetTypes'}
-                            onToggle={() => setExpandedSettingsView(prev => prev === 'assetTypes' ? null : 'assetTypes')}
-                        />
                     </div>
                 )}
 
@@ -4653,7 +4358,7 @@ const AdminDashboard = () => {
 
                 {/* Tickets View */}
                 {activeView === 'tickets' && <div className="flex-1 flex flex-col overflow-hidden p-8 gap-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 shrink-0">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5 shrink-0">
                         <div
                             className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
@@ -4661,7 +4366,7 @@ const AdminDashboard = () => {
                                 <h3 className="text-2xl font-bold mt-0.5">{loading ? '...' : totalTickets}</h3>
                             </div>
                             <div
-                                className="h-8 w-8 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                className="h-8 w-8 bg-primary/10 dark:bg-primary/20 text-primary rounded-lg flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-base">analytics</span>
                             </div>
                         </div>
@@ -4694,7 +4399,7 @@ const AdminDashboard = () => {
                                 <h3 className="text-2xl font-bold mt-0.5">{loading ? '...' : inProgressTickets}</h3>
                             </div>
                             <div
-                                className="h-8 w-8 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                className="h-8 w-8 bg-primary/10 dark:bg-primary/20 text-primary rounded-lg flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-base">running_with_errors</span>
                             </div>
                         </div>
@@ -4705,11 +4410,11 @@ const AdminDashboard = () => {
                                 <h3 className="text-2xl font-bold mt-0.5">{loading ? '...' : completedTickets}</h3>
                             </div>
                             <div
-                                className="h-8 w-8 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-lg flex items-center justify-center shrink-0">
+                                className="h-8 w-8 bg-primary/10 dark:bg-primary/20 text-primary rounded-lg flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-base">task_alt</span>
                             </div>
                         </div>
-                        <div
+                        {/* <div
                             className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Rejected</p>
@@ -4719,7 +4424,7 @@ const AdminDashboard = () => {
                                 className="h-8 w-8 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-lg flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-base">cancel</span>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                     <div
                         className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-0 flex-1 overflow-hidden">
@@ -4740,9 +4445,8 @@ const AdminDashboard = () => {
                                             </th>
                                         )}
                                         <th className="px-6 py-4 text-center">Ticket ID</th>
-                                        <th className="px-6 py-4">Branch</th>
                                         <th className="px-6 py-4">Date</th>
-                                        <th className="px-6 py-4">Name</th>
+                                        <th className="px-6 py-4">User Name</th>
                                         <th className="px-6 py-4">Department</th>
                                         <th className="px-6 py-4">Category</th>
                                         <th className="px-6 py-4">Assignee</th>
@@ -4752,13 +4456,13 @@ const AdminDashboard = () => {
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={isSuperAdmin ? "9" : "8"} className="px-6 py-8 text-center text-slate-500">
+                                            <td colSpan={isSuperAdmin ? "8" : "7"} className="px-6 py-8 text-center text-slate-500">
                                                 Loading tickets...
                                             </td>
                                         </tr>
                                     ) : filteredTickets.length === 0 ? (
                                         <tr>
-                                            <td colSpan={isSuperAdmin ? "9" : "8"} className="px-6 py-8 text-center text-slate-500">
+                                            <td colSpan={isSuperAdmin ? "8" : "7"} className="px-6 py-8 text-center text-slate-500">
                                                 {tickets.length === 0 ? "No tickets found." : "No tickets match your search."}
                                             </td>
                                         </tr>
@@ -4766,7 +4470,7 @@ const AdminDashboard = () => {
                                         pagedTickets.map((ticket, index) => (
                                             <tr key={ticket.ticket_id} onClick={() => handleRowClick(ticket)} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedTickets.has(ticket.ticket_id) ? 'bg-primary/5 dark:bg-primary/10 select-none' : ''}`}>
                                                 {isSuperAdmin && (
-                                                    <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                         <input
                                                             type="checkbox"
                                                             className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary cursor-pointer"
@@ -4775,14 +4479,16 @@ const AdminDashboard = () => {
                                                         />
                                                     </td>
                                                 )}
-                                                <td className="px-6 py-2 text-sm font-medium text-primary text-center">#{ticket.ticket_id}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300">{ticket.branch || '-'}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{formatDate(ticket.timestamp)}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300">{ticket.fullName}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300">{ticket.department || '-'}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300">{ticket.category}</td>
-                                                <td className="px-6 py-2 text-sm text-slate-700 dark:text-slate-300">{ticket.assignee || '-'}</td>
-                                                <td className="px-6 py-2">
+                                                <td className="px-6 py-4 text-sm font-medium text-primary text-center">#{ticket.ticket_id}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{formatDate(ticket.timestamp)}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                                                     {ticket.fullName}
+                                                     {ticket.empCode && <span className="ml-1.5 text-xs text-slate-400">({ticket.empCode})</span>}
+                                                 </td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.department || '-'}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.category}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.assignee || '-'}</td>
+                                                <td className="px-6 py-4">
                                                     {getStatusBadge(ticket.status)}
                                                 </td>
                                             </tr>
@@ -4845,7 +4551,7 @@ const AdminDashboard = () => {
                                         {selectedTicket.mode && selectedTicket.mode !== '-' && (
                                             <span className={`ml-3 px-2 py-0.5 text-xs font-medium rounded-full ${selectedTicket.mode === 'Remote Support'
                                                 ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                : 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary'
                                                 }`}>
                                                 {selectedTicket.mode}
                                             </span>
@@ -4869,27 +4575,35 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
                                 <div className="p-6 space-y-6">
-                                    {/* Row 1: Branch, Submitted */}
+                                    {/* Row 1: Username & Emp Code */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid-2">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Branch</label>
-                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.branch || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Submitted</label>
-                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{formatDate(selectedTicket.timestamp)}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Row 2: Name, Mobile */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid-2">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Customer</label>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Username</label>
                                             <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.fullName}</p>
                                         </div>
                                         <div>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Emp Code</label>
+                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.empCode || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Row 2: Mobile & Email */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid-2">
+                                        <div>
                                             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Mobile</label>
-                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.mobile}</p>
+                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.mobile || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{selectedTicket.email || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Row 3: Submitted Date & Time */}
+                                    <div className="grid grid-cols-1 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Submitted Date & Time</label>
+                                            <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{formatDate(selectedTicket.timestamp)}</p>
                                         </div>
                                     </div>
 
@@ -5195,7 +4909,7 @@ const AdminDashboard = () => {
                                                         'bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-800/30'}`}>
 
                                                 <span className={`material-symbols-outlined text-xl mt-0.5 shrink-0 
-                                                    ${selectedTicket.userConfirmation === 'Pending' ? 'text-blue-500' :
+                                                    ${selectedTicket.userConfirmation === 'Pending' ? 'text-primary' :
                                                         selectedTicket.userConfirmation?.startsWith('Yes') ? 'text-emerald-500' :
                                                             'text-rose-500'}`}>
                                                     {selectedTicket.userConfirmation === 'Pending' ? 'help' :
@@ -5205,13 +4919,13 @@ const AdminDashboard = () => {
 
                                                 <div>
                                                     <p className={`text-sm font-semibold 
-                                                        ${selectedTicket.userConfirmation === 'Pending' ? 'text-blue-700 dark:text-blue-400' :
+                                                        ${selectedTicket.userConfirmation === 'Pending' ? 'text-primary dark:text-primary' :
                                                             selectedTicket.userConfirmation?.startsWith('Yes') ? 'text-emerald-700 dark:text-emerald-400' :
                                                                 'text-rose-700 dark:text-rose-400'}`}>
                                                         {selectedTicket.userConfirmation}
                                                     </p>
                                                     <p className={`text-xs mt-0.5 
-                                                        ${selectedTicket.userConfirmation === 'Pending' ? 'text-blue-600 dark:text-blue-500' :
+                                                        ${selectedTicket.userConfirmation === 'Pending' ? 'text-primary dark:text-primary' :
                                                             selectedTicket.userConfirmation?.startsWith('Yes') ? 'text-emerald-600 dark:text-emerald-500' :
                                                                 'text-rose-600 dark:text-rose-500'}`}>
                                                         {selectedTicket.userConfirmation === 'Pending' ? 'Awaiting user to confirm if the issue is resolved.' :
@@ -5384,7 +5098,7 @@ const AdminDashboard = () => {
                                         {/* Resolution Comments — optional when setting to Completed */}
                                         {updateStatus === 'Completed' && !(selectedTicket.status === 'Completed' || selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected') && (
                                             <div className="mb-4">
-                                                <label className="block text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                                                <label className="block text-xs font-semibold text-primary dark:text-primary uppercase tracking-wider mb-1">
                                                     Resolution Comments (Optional)
                                                 </label>
                                                 <textarea
@@ -5454,7 +5168,7 @@ const AdminDashboard = () => {
                                                     <button
                                                         onClick={handleSaveChanges}
                                                         disabled={isUpdating}
-                                                        className="px-4 py-3 bg-primary hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                                                        className="px-4 py-3 bg-primary hover:bg-primary/90 text-white dark:text-slate-950 font-medium rounded-lg shadow-sm shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                                                     >
                                                         {isUpdating ? (
                                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -5466,8 +5180,8 @@ const AdminDashboard = () => {
 
                                             </div>
                                         </div>
-                                        {/* Request Approval section — allowed if user has send mail access, or for specific request types */}
-                                        {(user?.can_send_mail || isSuperAdmin || selectedTicket.category === 'Material request' || selectedTicket.supportType?.includes('Admin Support') || selectedTicket.supportType?.includes('IT Support')) && (
+                                        {/* Request Approval section — removed for all */}
+                                        {false && (
                                             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                                                 {/* Toggle button — disabled until status & assignee chosen */}
                                                 {/* Compute whether all members have responded */}
@@ -5514,7 +5228,7 @@ const AdminDashboard = () => {
                                                                 {showApprovalForm ? 'Hide Approval Form' : 'Request Approval'}
                                                             </button>
                                                             {allMembersResponded && (
-                                                                <p className="text-center text-xs text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center justify-center gap-1">
+                                                                <p className="text-center text-xs text-primary dark:text-primary mt-1.5 flex items-center justify-center gap-1">
                                                                     <span className="material-symbols-outlined text-[14px]">check_circle</span>
                                                                     Status received from all members
                                                                 </p>
@@ -5632,7 +5346,7 @@ const AdminDashboard = () => {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => setShowApprovalForm(false)}
-                                                                            className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                                            className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:white transition-colors"
                                                                         >
                                                                             Cancel
                                                                         </button>
@@ -5640,7 +5354,7 @@ const AdminDashboard = () => {
                                                                             type="button"
                                                                             disabled={isUpdating}
                                                                             onClick={(e) => submitApprovalRequest(e, selectedTicket.ticket_id)}
-                                                                            className="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-white dark:text-slate-950 text-sm font-medium rounded-lg shadow-sm shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                                                         >
                                                                             {isUpdating ? 'Sending…' : 'Send Request'}
                                                                         </button>
@@ -5754,7 +5468,7 @@ const AdminDashboard = () => {
                                     <button
                                         onClick={handleExportData}
                                         disabled={selectedExportColumns.length === 0}
-                                        className="px-6 py-2.5 text-sm font-semibold bg-primary text-white hover:bg-blue-600 rounded-xl shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="px-6 py-2.5 text-sm font-semibold bg-primary text-white dark:text-slate-950 hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         <span className="material-symbols-outlined text-[20px]">file_download</span>
                                         Export Data
@@ -5772,14 +5486,14 @@ const AdminDashboard = () => {
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5 text-center animate-in zoom-in-95 duration-200">
                         <div className="relative flex items-center justify-center">
                             <div className="h-16 w-16 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
-                            <span className="material-symbols-outlined text-[28px] text-emerald-500 absolute">qr_code_2</span>
+                            <span className="material-symbols-outlined text-[28px] text-primary absolute">qr_code_2</span>
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white">Generating Printable Sheet</h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
                                 Compiling selected asset QR labels into a high-DPI A4 printable layout...
                             </p>
-                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-semibold">
+                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary rounded-full text-xs font-semibold">
                                 <span className="animate-pulse h-1.5 w-1.5 bg-emerald-500 rounded-full"></span>
                                 <span>Processing {selectedAssetIds.length} Label(s)</span>
                             </div>
