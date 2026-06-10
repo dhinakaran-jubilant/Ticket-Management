@@ -3750,6 +3750,7 @@ const AdminDashboard = () => {
     const uniqueAssignees = ['All', ...new Set(tickets.map(t => t.assignee).filter(Boolean))];
     const uniqueAssetTypes = ['All', ...new Set((assetTypes || []).map(t => t.name).filter(Boolean))];
 
+    /*
     if (isMobile) {
         return (
             <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-center items-center p-6">
@@ -3807,6 +3808,7 @@ const AdminDashboard = () => {
             </div>
         );
     }
+    */
 
     return (
         <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
@@ -3917,6 +3919,7 @@ const AdminDashboard = () => {
                             <p className="text-xs text-slate-500 dark:text-slate-400">The user dashboard has admin users data</p>
                         </div>
                     )}
+                    {/*
                     {activeView === 'assets' && <>
                         <div className="relative flex-1 max-w-sm mr-6">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
@@ -4078,6 +4081,7 @@ const AdminDashboard = () => {
                             )}
                         </div>
                     </>}
+                    */}
                     {activeView === 'settings' && (
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Settings</h2>
@@ -4315,7 +4319,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* Assets View */}
+                {/* Assets View
                 {activeView === 'assets' && (
                     <AssetsView
                         assets={assets}
@@ -4355,6 +4359,7 @@ const AdminDashboard = () => {
                         departments={departments}
                     />
                 )}
+                */}
 
                 {/* Tickets View */}
                 {activeView === 'tickets' && <div className="flex-1 flex flex-col overflow-hidden p-8 gap-8">

@@ -7,14 +7,15 @@ import CheckStatus from './pages/CheckStatus';
 
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
-import AssetDetails from './pages/AssetDetails';
+// import AssetDetails from './pages/AssetDetails';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
-  const isAdminRoute = ['/admin', '/tickets', '/assets', '/assets/add', '/users', '/settings'].includes(location.pathname);
+  // Removed '/assets', '/assets/add' from AdminRoute check
+  const isAdminRoute = ['/admin', '/tickets', '/users', '/settings'].includes(location.pathname);
   const shouldHideHeaderFooter = isLoginPage || isAdminRoute;
 
   return (
@@ -25,7 +26,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/status" element={<CheckStatus />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/asset/:assetId" element={<AssetDetails />} />
+          {/* <Route path="/asset/:assetId" element={<AssetDetails />} /> */}
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminDashboard />
@@ -36,6 +37,7 @@ function App() {
               <AdminDashboard />
             </ProtectedRoute>
           } />
+          {/*
           <Route path="/assets" element={
             <ProtectedRoute>
               <AdminDashboard />
@@ -46,6 +48,7 @@ function App() {
               <AdminDashboard />
             </ProtectedRoute>
           } />
+          */}
           <Route path="/users" element={
             <ProtectedRoute>
               <AdminDashboard />
