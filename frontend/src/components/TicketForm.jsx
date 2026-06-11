@@ -43,9 +43,9 @@ const CustomSelect = ({
                 type="button"
                 disabled={disabled}
                 onClick={() => setIsOpen(o => !o)}
-                className={`flex items-center justify-between w-full px-4 ${paddingClass} text-sm ${roundedClass} border text-left transition-all bg-white dark:bg-slate-800 font-medium text-slate-900 dark:text-white ${
+                className={`flex items-center justify-between w-full px-4 ${paddingClass} text-sm ${roundedClass} border text-left transition-all bg-white dark:bg-slate-950 font-medium text-slate-900 dark:text-white ${
                     disabled
-                        ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+                        ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-700'
                         : isOpen
                         ? 'ring-2 ring-primary border-primary border-transparent shadow-sm'
                         : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
@@ -286,7 +286,7 @@ const TicketForm = () => {
                                         setShowBranchPopup(false);
                                         window.scrollTo(0, 0);
                                     }}
-                                    className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 group"
+                                    className="w-full py-4 bg-primary hover:bg-primary/90 text-white dark:text-slate-900 font-bold rounded-xl shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 group"
                                 >
                                     <span>Next</span>
                                     <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
@@ -381,7 +381,7 @@ const TicketForm = () => {
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="fullName">Full Name <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 id="fullName"
                                 name="fullName"
                                 placeholder="John Doe"
@@ -395,7 +395,7 @@ const TicketForm = () => {
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="empCode">Emp Code <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 id="empCode"
                                 name="empCode"
                                 placeholder="e.g. EMP12345"
@@ -411,7 +411,7 @@ const TicketForm = () => {
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">Email Address <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 id="email"
                                 name="email"
                                 placeholder="john@example.com"
@@ -425,7 +425,7 @@ const TicketForm = () => {
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="mobile">Mobile Number <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 id="mobile"
                                 name="mobile"
                                 placeholder="+91 98765 43210"
@@ -496,7 +496,7 @@ const TicketForm = () => {
                     <div className="space-y-2">
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="description">Description (Nature of Issues)</label>
                         <textarea
-                            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             id="description"
                             name="description"
                             placeholder="Please provide as much detail as possible... (Optional)"
@@ -566,7 +566,7 @@ const TicketForm = () => {
                         </div>
                         <div className="space-y-2">
                             <button
-                                className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-bold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                                className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-bold text-white dark:text-slate-900 bg-primary hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                                 type="submit"
                                 disabled={status === 'submitting' || !!attachmentError}
                                 >

@@ -226,7 +226,7 @@ const Login = () => {
                             </div>
                         </div>
                         <button
-                            className="w-full py-4 px-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/25 transition-all focus:ring-4 focus:ring-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                            className="w-full py-4 px-4 bg-primary hover:bg-primary/90 text-white dark:text-slate-900 font-bold rounded-xl shadow-lg shadow-primary/25 transition-all focus:ring-4 focus:ring-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                             type="submit"
                             disabled={loading}
                         >
