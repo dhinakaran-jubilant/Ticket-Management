@@ -1,9 +1,105 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../api';
 import logoImage from '../assets/logo.png';
 const logoDarkImage = logoImage;
 import { copyToClipboard } from '../utils/clipboard';
+
+const CustomSelect = ({
+    name,
+    options,
+    value,
+    onChange,
+    disabled,
+    placeholder,
+    required,
+    roundedClass = 'rounded-lg',
+    paddingClass = 'py-2.5'
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const selectedOption = options.find(opt => {
+        const val = typeof opt === 'object' ? opt.value : opt;
+        return val === value;
+    });
+    const displayLabel = selectedOption 
+        ? (typeof selectedOption === 'object' ? selectedOption.label : selectedOption) 
+        : placeholder;
+
+    return (
+        <div className="relative w-full" ref={ref}>
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setIsOpen(o => !o)}
+                className={`flex items-center justify-between w-full px-4 ${paddingClass} text-sm ${roundedClass} border text-left transition-all bg-white dark:bg-slate-800 font-medium text-slate-900 dark:text-white ${
+                    disabled
+                        ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+                        : isOpen
+                        ? 'ring-2 ring-primary border-primary border-transparent shadow-sm'
+                        : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
+                }`}
+            >
+                <span className={`truncate ${!value ? 'text-slate-400 dark:text-slate-500 font-normal' : ''}`}>{displayLabel}</span>
+                <span className={`material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200 shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+            {isOpen && !disabled && (
+                <div className="absolute left-0 w-full mt-1.5 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-[100] py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar px-1.5 py-0.5 space-y-0.5">
+                        {options.map((opt, idx) => {
+                            const val = typeof opt === 'object' ? opt.value : opt;
+                            const lbl = typeof opt === 'object' ? opt.label : opt;
+                            const isSelected = val === value;
+                            return (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange({ target: { name, value: val } });
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors font-medium ${
+                                        isSelected
+                                            ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary'
+                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {lbl}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            <select
+                name={name}
+                value={value}
+                required={required}
+                onChange={onChange}
+                className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+                tabIndex={-1}
+            >
+                <option value="">{placeholder}</option>
+                {options.map((opt, idx) => {
+                    const val = typeof opt === 'object' ? opt.value : opt;
+                    const lbl = typeof opt === 'object' ? opt.label : opt;
+                    return <option key={idx} value={val}>{lbl}</option>;
+                })}
+            </select>
+        </div>
+    );
+};
 
 const TicketForm = () => {
     const location = useLocation();
@@ -168,21 +264,19 @@ const TicketForm = () => {
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Support Type <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none cursor-pointer pr-10"
-                                            value={formData.supportType}
-                                            onChange={(e) => setFormData({ ...formData, supportType: e.target.value, category: '', subCategory: '', mode: '' })}
-                                            required
-                                        >
-                                            <option value="">Select support type</option>
-                                            <option value="IT Support">IT Support</option>
-                                            <option value="Admin Support">Admin Support</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">
-                                            <span className="material-symbols-outlined">expand_more</span>
-                                        </div>
-                                    </div>
+                                    <CustomSelect
+                                        name="supportType"
+                                        value={formData.supportType}
+                                        onChange={(e) => setFormData({ ...formData, supportType: e.target.value, category: '', subCategory: '', mode: '' })}
+                                        options={[
+                                            { value: 'IT Support', label: 'IT Support' },
+                                            { value: 'Admin Support', label: 'Admin Support' }
+                                        ]}
+                                        placeholder="Select support type"
+                                        required
+                                        roundedClass="rounded-xl"
+                                        paddingClass="py-3"
+                                    />
                                 </div>
 
                                 <button
@@ -349,42 +443,32 @@ const TicketForm = () => {
                         {/* Department */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="department">Department <span className="text-red-500">*</span></label>
-                            <select
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                id="department"
+                            <CustomSelect
                                 name="department"
-                                required
                                 value={formData.department}
                                 onChange={handleChange}
                                 disabled={departmentsLoading || !formData.supportType}
-                            >
-                                <option value="">{departmentsLoading ? 'Loading Departments...' : 'Select a department'}</option>
-                                {departments
+                                options={departments
                                     .filter(d => d.support_type.includes(formData.supportType))
-                                    .map(d => (
-                                        <option key={d.id} value={d.name}>{d.name}</option>
-                                    ))}
-                            </select>
+                                    .map(d => ({ value: d.name, label: d.name }))}
+                                placeholder={departmentsLoading ? 'Loading Departments...' : 'Select a department'}
+                                required
+                            />
                         </div>
                         {/* Issue Category */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="category">Category <span className="text-red-500">*</span></label>
-                            <select
-                                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                id="category"
+                            <CustomSelect
                                 name="category"
-                                required
                                 value={formData.category}
                                 onChange={handleChange}
                                 disabled={categoriesLoading || !formData.supportType}
-                            >
-                                <option value="">{categoriesLoading ? 'Loading Categories...' : 'Select a category'}</option>
-                                {categories
+                                options={categories
                                     .filter(c => c.support_type.includes(formData.supportType))
-                                    .map(c => (
-                                        <option key={c.id} value={c.name}>{c.name}</option>
-                                    ))}
-                            </select>
+                                    .map(c => ({ value: c.name, label: c.name }))}
+                                placeholder={categoriesLoading ? 'Loading Categories...' : 'Select a category'}
+                                required
+                            />
                         </div>
                     </div>
                     {/* Sub Category - Material Request Only */}
@@ -392,20 +476,19 @@ const TicketForm = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="subCategory">Sub Category <span className="text-red-500">*</span></label>
-                                <select
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                    id="subCategory"
+                                <CustomSelect
                                     name="subCategory"
-                                    required
                                     value={formData.subCategory}
                                     onChange={handleChange}
-                                >
-                                    <option value="">Select type</option>
-                                    <option value="New request">New request</option>
-                                    <option value="Replacement">Replacement</option>
-                                    <option value="Broken/Lost">Broken/Lost</option>
-                                    <option value="Temporary request">Temporary request</option>
-                                </select>
+                                    options={[
+                                        { value: 'New request', label: 'New request' },
+                                        { value: 'Replacement', label: 'Replacement' },
+                                        { value: 'Broken/Lost', label: 'Broken/Lost' },
+                                        { value: 'Temporary request', label: 'Temporary request' }
+                                    ]}
+                                    placeholder="Select type"
+                                    required
+                                />
                             </div>
                         </div>
                     )}
@@ -470,24 +553,27 @@ const TicketForm = () => {
                     </div>
 
                     {/* Submit Button */}
-                    <div className="pt-4 space-y-3">
-                        <button
-                            className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-bold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-                            type="submit"
-                            disabled={status === 'submitting' || !!attachmentError}
-                        >
-                            {status === 'submitting' ? 'Submitting...' : 'Submit Ticket'}
-                            {!status === 'submitting' && <span className="material-icons text-xl">send</span>}
-                        </button>
-
-                        <Link
-                            to="/"
-                            onClick={() => window.location.reload()}
-                            className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-slate-300 dark:border-slate-700 rounded-lg text-lg font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer group"
-                        >
-                            <span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-1">arrow_back</span>
-                            Back to Home
-                        </Link>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        <div className="space-y-2">
+                            <Link
+                                to="/"
+                                onClick={() => window.location.reload()}
+                                className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-slate-300 dark:border-slate-700 rounded-lg text-lg font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer group"
+                                >
+                                <span className="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-1">arrow_back</span>
+                                Back to Home
+                            </Link>
+                        </div>
+                        <div className="space-y-2">
+                            <button
+                                className="w-full flex justify-center items-center gap-2 py-4 px-6 border border-transparent rounded-lg shadow-lg text-lg font-bold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                                type="submit"
+                                disabled={status === 'submitting' || !!attachmentError}
+                                >
+                                {status === 'submitting' ? 'Submitting...' : 'Submit Ticket'}
+                                {status !== 'submitting' && <span className="material-icons !text-[20px]">send</span>}
+                            </button>
+                        </div>
                     </div>
                     {status === 'error' && (
                         <div className="text-red-500 text-sm text-center mt-2">

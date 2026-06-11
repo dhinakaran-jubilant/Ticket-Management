@@ -3,7 +3,7 @@ import TicketForm from '../components/TicketForm';
 
 const Home = () => {
     return (
-        <main className="max-w-6xl mx-auto px-4 py-12">
+        <main className="w-[70%] mx-auto px-4 py-12">
             {/* Hero Title */}
             <div className="text-center mb-10">
                 <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl mb-3">

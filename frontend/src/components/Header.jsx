@@ -25,8 +25,15 @@ const Header = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <Link to="/" className="flex items-center">
-                        <img src={logoImage} alt="Logo" className="h-10 object-contain dark:hidden" />
-                        <img src={logoDarkImage} alt="Logo" className="h-10 object-contain hidden dark:block" />
+                        {/* <img src={logoImage} alt="Logo" classN@tickame="h-10 object-contain dark:hidden" />
+                        <img src={logoDarkImage} alt="Logo" className="h-10 object-contain hidden dark:block" /> */}
+                        <div className='flex gap-3 items-center !text-[25px]'>
+
+                            <span className="material-symbols-outlined text-primary">
+                                support_agent
+                            </span>
+                            <span className='text-primary font-bold'>Support Desk</span>
+                        </div>
                     </Link>
                     <div className="flex items-center gap-3">
                         {/* Dark / Light toggle */}
