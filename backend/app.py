@@ -50,8 +50,8 @@ logging.basicConfig(
 # ---------------------------------------------------------------------------
 SMTP_SERVER   = "smtp.gmail.com"
 SMTP_PORT     = 587
-EMAIL_SENDER  = "ticketmanagement066@gmail.com"
-EMAIL_PASSWORD = "rudfjqwrxbcwauin"
+EMAIL_SENDER  = "supportdeskjubilant@gmail.com"
+EMAIL_PASSWORD = "iseljgfoxfpbtqeo"
 # Initialise DB on startup
 init_db()
 
