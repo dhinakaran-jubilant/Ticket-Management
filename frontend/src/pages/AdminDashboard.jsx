@@ -4486,10 +4486,7 @@ const AdminDashboard = () => {
                                                 )}
                                                 <td className="px-6 py-4 text-sm font-medium text-primary text-center">#{ticket.ticket_id}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">{formatDate(ticket.timestamp)}</td>
-                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                                                     {ticket.fullName}
-                                                     {ticket.empCode && <span className="ml-1.5 text-xs text-slate-400">({ticket.empCode})</span>}
-                                                 </td>
+                                                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.fullName}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.department || '-'}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.category}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{ticket.assignee || '-'}</td>
