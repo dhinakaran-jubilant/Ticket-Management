@@ -78,5 +78,7 @@ def test_api_submit_ticket(client, mocker):
     
     assert response.status_code == 200
     assert response.json.get("message") == "Ticket submitted successfully"
-    # ticket id should be TKT100 since max id was mocked as 99
-    assert response.json.get("ticket_id") == "TKT100"
+    import datetime
+    current_year = datetime.datetime.now().year
+    # ticket id should be TKT{year}0100 since max id was mocked as 99
+    assert response.json.get("ticket_id") == f"TKT{current_year}0100"

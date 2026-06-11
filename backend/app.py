@@ -435,6 +435,110 @@ def send_new_ticket_notification(ticket_data, recipient_email):
         pass
 
 
+def send_whatsapp_notification(ticket_data):
+    """
+    Sends WhatsApp notification to the user using pywhatkit.
+    """
+    try:
+        import pywhatkit
+        mobile = ticket_data.get('mobile', '').strip()
+        if not mobile:
+            return
+
+        # Ensure country code is present. Standard format is '+CountryCodeNumber'
+        if not mobile.startswith('+'):
+            if len(mobile) == 10:
+                mobile = f"+91{mobile}"
+            else:
+                mobile = f"+{mobile}"
+
+        ticket_id = ticket_data.get('ticket_id', '')
+        name = ticket_data.get('fullName', 'Unknown')
+        category = ticket_data.get('category', '')
+        sub_category = ticket_data.get('subCategory', '')
+        department = ticket_data.get('department', '')
+        description = ticket_data.get('description', '')
+
+        category_display = f"{category} ({sub_category})" if sub_category else category
+
+        message = (
+            f"Dear {name},\n\n"
+            f"Your ticket has been successfully created.\n\n"
+            f"Ticket ID: {ticket_id}\n"
+            f"Department: {department}\n"
+            f"Category: {category_display}\n"
+            f"Description: {description or 'N/A'}\n\n"
+            f"This is an automated notification. Please do not reply to this message."
+        )
+
+        # Send WhatsApp message instantly.
+        # wait_time is time to wait before sending (seconds), tab_close closes browser tab after.
+        pywhatkit.sendwhatmsg_instantly(
+            phone_no=mobile,
+            message=message,
+            wait_time=15,
+            tab_close=True,
+            close_time=3
+        )
+    except Exception as e:
+        logging.error(f"Failed to send WhatsApp message to {ticket_data.get('mobile', '')}: {e}")
+
+
+def send_user_ticket_email(ticket_data):
+    """
+    Sends a confirmation email to the user when a new ticket is generated.
+    """
+    to_email = ticket_data.get('email')
+    if not all([EMAIL_SENDER, EMAIL_PASSWORD, to_email]):
+        return
+
+    try:
+        ticket_id = ticket_data.get('ticket_id', '')
+        name = ticket_data.get('fullName', 'Unknown')
+        category = ticket_data.get('category', '')
+        sub_category = ticket_data.get('subCategory', '')
+        department = ticket_data.get('department', '')
+        description = ticket_data.get('description', '')
+
+        subject = f"Ticket Created Successfully - {ticket_id}"
+        
+        category_display = f"{category} ({sub_category})" if sub_category else category
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #10b981;">Ticket Created Successfully</h2>
+          <p>Dear {name},</p>
+          <p>Your ticket has been successfully created. Here are the details:</p>
+          <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+            <tr><td style="width: 30%;"><strong>Ticket ID</strong></td><td>{ticket_id}</td></tr>
+            <tr><td><strong>Department</strong></td><td>{department}</td></tr>
+            <tr><td><strong>Category</strong></td><td>{category_display}</td></tr>
+            <tr><td><strong>Description</strong></td><td style="white-space: pre-wrap;">{description}</td></tr>
+          </table>
+          <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
+            This is an automated notification. Please do not reply to this message.
+          </p>
+        </body>
+        </html>
+        """
+
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_SENDER
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, to_email, msg.as_string())
+        server.quit()
+
+    except Exception as e:
+        logging.error(f"Failed to send confirmation email to {to_email}: {e}")
+
+
 def send_completion_email(ticket_data):
     """
     Sends an email to the requester when a ticket is marked as Completed.
@@ -1368,6 +1472,12 @@ def submit_ticket():
             # 2. Additionally send to admin@cottonconcepts.co.in if support type is Admin Support in background
             if data.get('supportType') == 'Admin Support':
                 threading.Thread(target=send_new_ticket_notification, args=(data, "admin@cottonconcepts.co.in"), daemon=True).start()
+                
+            # 3. Send WhatsApp notification to the user in background
+            threading.Thread(target=send_whatsapp_notification, args=(data,), daemon=True).start()
+                
+            # 4. Send email confirmation to the user in background
+            threading.Thread(target=send_user_ticket_email, args=(data,), daemon=True).start()
                 
             return jsonify({"message": "Ticket submitted successfully", "ticket_id": ticket_id}), 200
         return jsonify({"error": "Failed to save ticket", "details": result['error']}), 500
