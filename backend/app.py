@@ -50,8 +50,8 @@ logging.basicConfig(
 # ---------------------------------------------------------------------------
 SMTP_SERVER   = "smtp.gmail.com"
 SMTP_PORT     = 587
-EMAIL_SENDER  = "supportdeskjubilant@gmail.com"
-EMAIL_PASSWORD = "iseljgfoxfpbtqeo"
+EMAIL_SENDER  = "itsupport@jubilantenterprises.in"
+EMAIL_PASSWORD = "lentcqehpkhskuve"
 # Initialise DB on startup
 init_db()
 
