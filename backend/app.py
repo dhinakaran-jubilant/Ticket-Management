@@ -1466,17 +1466,10 @@ def submit_ticket():
 
         result = append_to_sheet(data)
         if result['success']:
-            # 1. Always send notification to itcottonconcepts@gmail.com in background
-            threading.Thread(target=send_new_ticket_notification, args=(data, "itcottonconcepts@gmail.com"), daemon=True).start()
-            
-            # 2. Additionally send to admin@cottonconcepts.co.in if support type is Admin Support in background
-            if data.get('supportType') == 'Admin Support':
-                threading.Thread(target=send_new_ticket_notification, args=(data, "admin@cottonconcepts.co.in"), daemon=True).start()
-                
-            # 3. Send WhatsApp notification to the user in background
+            # 1. Send WhatsApp notification to the user in background
             # threading.Thread(target=send_whatsapp_notification, args=(data,), daemon=True).start()
                 
-            # 4. Send email confirmation to the user in background
+            # 2. Send email confirmation to the user in background
             threading.Thread(target=send_user_ticket_email, args=(data,), daemon=True).start()
                 
             return jsonify({"message": "Ticket submitted successfully", "ticket_id": ticket_id}), 200
