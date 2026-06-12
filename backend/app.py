@@ -1474,7 +1474,7 @@ def submit_ticket():
                 threading.Thread(target=send_new_ticket_notification, args=(data, "admin@cottonconcepts.co.in"), daemon=True).start()
                 
             # 3. Send WhatsApp notification to the user in background
-            threading.Thread(target=send_whatsapp_notification, args=(data,), daemon=True).start()
+            # threading.Thread(target=send_whatsapp_notification, args=(data,), daemon=True).start()
                 
             # 4. Send email confirmation to the user in background
             threading.Thread(target=send_user_ticket_email, args=(data,), daemon=True).start()
